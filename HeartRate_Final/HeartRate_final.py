@@ -31,25 +31,13 @@ def parse_tcx(file_path):
     
     return heart_rate_data
 
-def calculate_ibis(timestamps):
-    # Calculate IBIs (in seconds)
-    ibis = [(timestamps[i] - timestamps[i-1]) for i in range(1, len(timestamps))]
-    return ibis
-
-def calculate_hrv_metrics(ibis):
-    if len(ibis) < 2:
-        return None, None
-    sdnn = np.std(ibis)
-    rmssd = np.sqrt(np.mean(np.square(np.diff(ibis))))
-    return sdnn, rmssd
-
-def save_heart_rate_data_with_hrv(heart_rate_data, output_dir):
+def save_heart_rate_data(heart_rate_data, output_dir):
     # Determine the next file number
-    existing_files = [f for f in os.listdir(output_dir) if f.startswith("hr_data_hrv_") and f.endswith(".txt")]
+    existing_files = [f for f in os.listdir(output_dir) if f.startswith("hr_data_") and f.endswith(".txt")]
     numbers = []
     for f in existing_files:
         try:
-            number = int(f.split("_")[3].split(".")[0])
+            number = int(f.split("_")[2].split(".")[0])
             numbers.append(number)
         except ValueError:
             continue
@@ -59,29 +47,17 @@ def save_heart_rate_data_with_hrv(heart_rate_data, output_dir):
     else:
         next_number = 1
 
-    output_file = os.path.join(output_dir, f"hr_data_hrv_{next_number}.txt")
+    output_file = os.path.join(output_dir, f"hr_data_{next_number}.txt")
 
-    timestamps = [data[0] for data in heart_rate_data]
-    ibis = calculate_ibis(timestamps)
-    
     with open(output_file, 'w') as f:
-        f.write("Timestamp\tHR\tSDNN\tRMSSD\n")
-        for i in range(len(heart_rate_data)):
-            timestamp, heart_rate = heart_rate_data[i]
-            if i > 0 and i <= len(ibis):
-                current_ibis = ibis[:i]
-                sdnn, rmssd = calculate_hrv_metrics(current_ibis)
-                if sdnn is not None and rmssd is not None:
-                    f.write(f"{timestamp}\t{heart_rate}\t{sdnn:.4f}\t{rmssd:.4f}\n")
-                else:
-                    f.write(f"{timestamp}\t{heart_rate}\tN/A\tN/A\n")
-            else:
-                f.write(f"{timestamp}\t{heart_rate}\tN/A\tN/A\n")
+        f.write("Timestamp, HR(bpm), HRV(ms), Resp(brpm)\n")
+        for timestamp, heart_rate in heart_rate_data:
+            f.write(f"{timestamp}, {heart_rate}, NaN, NaN\n")
 
-    print(f"Heart rate data with HRV successfully saved to {output_file}")
+    print(f"Heart rate data successfully saved to {output_file}")
 
 # Path to your TCX file
-tcx_file_path = r"F:\CODE\pythonscripts\FINAL\HeartRate_Final\Garmin_activities\activity_partic3.tcx"
+tcx_file_path = r"F:\CODE\pythonscripts\FINAL\HeartRate_Final\Garmin_activities\activity_partic7.tcx"
 output_dir = r"F:\CODE\pythonscripts\FINAL\HeartRate_Final\Raw Data"
 
 # Verify the file path
@@ -91,8 +67,8 @@ else:
     # Parse the TCX file and extract heart rate data
     heart_rate_data = parse_tcx(tcx_file_path)
 
-    # Save the extracted heart rate data along with HRV metrics to a text file with a unique name
+    # Save the extracted heart rate data to a text file with a unique name
     if heart_rate_data:
-        save_heart_rate_data_with_hrv(heart_rate_data, output_dir)
+        save_heart_rate_data(heart_rate_data, output_dir)
     else:
         print("No heart rate data extracted")
